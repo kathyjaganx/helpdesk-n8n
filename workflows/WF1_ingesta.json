@@ -9,27 +9,33 @@
         "responseMode": "responseNode",
         "options": {}
       },
-      "id": "dbd7c22a-e61f-4e23-a562-99b2b8a77c29",
+      "id": "f301ea3e-af9d-4b07-a798-5ae59e2ad271",
       "name": "Webhook - Recibir ticket",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
       "position": [
         0,
-        300
+        128
       ],
-      "webhookId": "525a589e-74e1-430e-babc-ab2f8c5eb60c"
+      "webhookId": "525a589e-74e1-430e-babc-ab2f8c5eb60c",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "0o1DJJK7kfewNkon",
+          "name": "Header Auth Help Desk"
+        }
+      }
     },
     {
       "parameters": {
         "jsCode": "// =====================================================================\n// WF1 - Validación y sanitización de la solicitud de ticket\n// Seguridad:\n//  - Lista blanca: solo se aceptan los campos definidos en REGLAS;\n//    cualquier otro campo enviado se ignora.\n//  - Se eliminan etiquetas HTML/script y caracteres de control.\n//  - Se validan longitudes mínimas y máximas y el formato del correo.\n// =====================================================================\nconst REGLAS = {\n  solicitante_nombre: { min: 3,  max: 100 },\n  solicitante_correo: { min: 6,  max: 150 },\n  departamento:       { min: 2,  max: 100 },\n  asunto:             { min: 5,  max: 150 },\n  descripcion:        { min: 10, max: 2000 },\n};\nconst CORREO = /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}$/i;\n\nfunction limpiar(valor) {\n  return valor\n    .replace(/<(script|style)[^>]*>[\\s\\S]*?<\\/\\1>/gi, '') // quita bloques <script>/<style> completos\n    .replace(/<[^>]*>/g, '')                 // quita cualquier otra etiqueta HTML\n    .replace(/[\\u0000-\\u001F\\u007F]/g, ' ')  // quita caracteres de control\n    .replace(/\\s+/g, ' ')                    // colapsa espacios repetidos\n    .trim();\n}\n\nconst entrada = $input.first().json;\nconst headers = entrada.headers || {};\nconst body = entrada.body;\nconst origen_ip = headers['x-forwarded-for'] || headers['x-real-ip'] || 'local';\n\nconst errores = [];\nconst datos = {};\nconst esObjeto = body !== null && typeof body === 'object' && !Array.isArray(body);\n\nif (!esObjeto) {\n  errores.push('El cuerpo de la solicitud debe ser un objeto JSON');\n} else {\n  for (const [campo, regla] of Object.entries(REGLAS)) {\n    const valor = body[campo];\n    if (valor === undefined || valor === null || valor === '') {\n      errores.push(`Falta el campo ${campo}`);\n      continue;\n    }\n    if (typeof valor !== 'string') {\n      errores.push(`El campo ${campo} debe ser texto`);\n      continue;\n    }\n    const limpio = limpiar(valor);\n    if (limpio.length < regla.min) {\n      errores.push(`${campo} debe tener al menos ${regla.min} caracteres`);\n    } else if (limpio.length > regla.max) {\n      errores.push(`${campo} no puede superar ${regla.max} caracteres`);\n    } else {\n      datos[campo] = limpio;\n    }\n  }\n\n  if (datos.solicitante_correo) {\n    datos.solicitante_correo = datos.solicitante_correo.toLowerCase();\n    if (!CORREO.test(datos.solicitante_correo)) {\n      errores.push('solicitante_correo no tiene un formato válido');\n      delete datos.solicitante_correo;\n    }\n  }\n}\n\nreturn [{\n  json: {\n    valido: errores.length === 0,\n    errores,\n    datos,\n    origen_ip,\n    campos_recibidos: esObjeto ? Object.keys(body).slice(0, 20) : [],\n  },\n}];\n"
       },
-      "id": "e1beb8a5-7dc9-4185-b1ad-f2670951884f",
+      "id": "c26e6875-a041-47f1-aeaa-7120b8111cbb",
       "name": "Validar y sanitizar",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
         240,
-        300
+        128
       ]
     },
     {
@@ -38,7 +44,8 @@
           "options": {
             "caseSensitive": true,
             "leftValue": "",
-            "typeValidation": "strict"
+            "typeValidation": "strict",
+            "version": 1
           },
           "conditions": [
             {
@@ -56,13 +63,13 @@
         },
         "options": {}
       },
-      "id": "5b25b53d-4011-49cf-b20b-3ec4dd701749",
+      "id": "ce9d13cc-e5a7-4dbc-8419-8748f5649916",
       "name": "¿Datos válidos?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
       "position": [
         480,
-        300
+        128
       ]
     },
     {
@@ -73,14 +80,20 @@
           "queryReplacement": "={{ [ $json.datos.solicitante_nombre, $json.datos.solicitante_correo, $json.datos.departamento, $json.datos.asunto, $json.datos.descripcion ] }}"
         }
       },
-      "id": "72d676ca-6d76-40ff-806d-4e9a15fb85d2",
+      "id": "7c5ebbe4-aafa-4b2d-b47f-1cc2053d9f4c",
       "name": "Guardar ticket",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
       "position": [
         720,
-        180
-      ]
+        0
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "L0pk0j7kjNbTJxsl",
+          "name": "Postgres Help Desk"
+        }
+      }
     },
     {
       "parameters": {
@@ -90,14 +103,20 @@
           "queryReplacement": "={{ [ $json.id, $('Validar y sanitizar').first().json.origen_ip, JSON.stringify({ codigo: $json.codigo, departamento: $('Validar y sanitizar').first().json.datos.departamento }) ] }}"
         }
       },
-      "id": "5d02bb2d-bab4-4763-87fc-5c457b4b6d3b",
+      "id": "45456869-e8f4-471c-ae4f-23f0d0a196d3",
       "name": "Auditoría - Ticket creado",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
       "position": [
         960,
-        180
-      ]
+        0
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "L0pk0j7kjNbTJxsl",
+          "name": "Postgres Help Desk"
+        }
+      }
     },
     {
       "parameters": {
@@ -107,13 +126,13 @@
           "responseCode": 201
         }
       },
-      "id": "639b46ec-68e4-4d19-9b9d-6616613f9ad3",
+      "id": "e29cf188-0a9f-408e-b098-89095fac7ff9",
       "name": "Responder 201 - Creado",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
       "position": [
         1200,
-        180
+        0
       ]
     },
     {
@@ -124,14 +143,20 @@
           "queryReplacement": "={{ [ $json.origen_ip, JSON.stringify({ errores: $json.errores, campos_recibidos: $json.campos_recibidos }) ] }}"
         }
       },
-      "id": "0a377d78-61d8-4d4e-85cd-0359a04130e5",
+      "id": "614fd608-3ada-4447-bf87-814dbd3b7e01",
       "name": "Auditoría - Solicitud rechazada",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
       "position": [
         720,
-        420
-      ]
+        240
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "L0pk0j7kjNbTJxsl",
+          "name": "Postgres Help Desk"
+        }
+      }
     },
     {
       "parameters": {
@@ -141,16 +166,17 @@
           "responseCode": 400
         }
       },
-      "id": "cca1938f-96ce-4dcd-a419-da84519aaa7d",
+      "id": "ed7578e5-6ae6-4fbf-b1ee-645995dfbebc",
       "name": "Responder 400 - Rechazado",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
       "position": [
         960,
-        420
+        240
       ]
     }
   ],
+  "pinData": {},
   "connections": {
     "Webhook - Recibir ticket": {
       "main": [
@@ -226,11 +252,21 @@
       ]
     }
   },
-  "pinData": {},
+  "active": true,
   "settings": {
-    "executionOrder": "v1"
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "errorWorkflow": "mGvRNpoeolVvRpGX",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
   },
+  "versionId": "d937e7da-85a9-499b-b628-f3834614d9c1",
   "meta": {
-    "templateCredsSetupCompleted": false
-  }
+    "templateCredsSetupCompleted": true,
+    "instanceId": "d71723bb4468d26519c1534fbe0c2f98344d5b5aa989f2fcc5f51a593924ea9a"
+  },
+  "nodeGroups": [],
+  "id": "j8jQglAHQmmOgbMf",
+  "tags": []
 }

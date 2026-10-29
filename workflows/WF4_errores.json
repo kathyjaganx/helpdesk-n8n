@@ -3,26 +3,26 @@
   "nodes": [
     {
       "parameters": {},
-      "id": "9c84fe2c-e265-4e0d-b4de-ab06e48b18b3",
+      "id": "cfe97209-6fd2-4812-bfb4-c3e4190b560c",
       "name": "Error Trigger",
       "type": "n8n-nodes-base.errorTrigger",
       "typeVersion": 1,
       "position": [
         0,
-        300
+        0
       ]
     },
     {
       "parameters": {
         "jsCode": "// =====================================================================\n// WF4 - Preparar el registro del error\n// El Error Trigger entrega datos distintos según dónde ocurrió el fallo:\n//  - \"execution\": falló un nodo durante la ejecución.\n//  - \"trigger\":   falló el disparador (por ejemplo el Schedule).\n// Seguridad: no se guarda el \"stack\" técnico completo, solo lo necesario\n// para diagnosticar; el mensaje se recorta a 2000 caracteres.\n// =====================================================================\nconst d = $input.first().json;\nconst ejecucion = d.execution || {};\nconst disparador = d.trigger || {};\nconst error = ejecucion.error || disparador.error || {};\n\nreturn [{\n  json: {\n    workflow: (d.workflow && d.workflow.name) || 'Desconocido',\n    nodo: ejecucion.lastNodeExecuted || (error.node && error.node.name) || 'No identificado',\n    mensaje: String(error.message || 'Error sin mensaje').slice(0, 2000),\n    ejecucion_id: ejecucion.id ? String(ejecucion.id) : 'Sin ejecucion',\n    url_ejecucion: ejecucion.url || 'Sin URL',\n    detalle: {\n      origen: d.trigger ? 'disparador' : 'ejecucion',\n      modo: ejecucion.mode || disparador.mode || null,\n      workflow_id: (d.workflow && d.workflow.id) || null,\n      descripcion: error.description || null,\n    },\n  },\n}];\n"
       },
-      "id": "7c981ff4-c636-4650-bfa8-872acb7603ab",
+      "id": "99e6148d-0a11-4856-976e-e60349b75904",
       "name": "Preparar registro",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
         240,
-        300
+        0
       ]
     },
     {
@@ -33,14 +33,20 @@
           "queryReplacement": "={{ [ $json.workflow, $json.nodo, $json.mensaje, $json.ejecucion_id, $json.url_ejecucion, JSON.stringify($json.detalle) ] }}"
         }
       },
-      "id": "22674348-4b42-464c-b11c-fbb54d7ab2d5",
+      "id": "b57c10c9-1a85-4ff4-a6d9-d66812bffa8d",
       "name": "Registrar error",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
       "position": [
         480,
-        300
-      ]
+        0
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "L0pk0j7kjNbTJxsl",
+          "name": "Postgres Help Desk"
+        }
+      }
     },
     {
       "parameters": {
@@ -50,16 +56,23 @@
           "queryReplacement": "={{ [ JSON.stringify({ error_id: $json.id, workflow: $json.workflow, nodo: $json.nodo }) ] }}"
         }
       },
-      "id": "027fa86e-bcc4-4940-a929-7962691ddc12",
+      "id": "e37e58a4-6789-4894-8a26-a14ac71815c3",
       "name": "Auditoría - Error",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
       "position": [
         720,
-        300
-      ]
+        0
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "L0pk0j7kjNbTJxsl",
+          "name": "Postgres Help Desk"
+        }
+      }
     }
   ],
+  "pinData": {},
   "connections": {
     "Error Trigger": {
       "main": [
@@ -95,11 +108,16 @@
       ]
     }
   },
-  "pinData": {},
+  "active": true,
   "settings": {
-    "executionOrder": "v1"
+    "executionOrder": "v1",
+    "binaryMode": "separate"
   },
+  "versionId": "adade232-fb7d-4df9-85b1-aef6756a3551",
   "meta": {
-    "templateCredsSetupCompleted": false
-  }
+    "instanceId": "d71723bb4468d26519c1534fbe0c2f98344d5b5aa989f2fcc5f51a593924ea9a"
+  },
+  "nodeGroups": [],
+  "id": "mGvRNpoeolVvRpGX",
+  "tags": []
 }

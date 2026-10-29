@@ -6,34 +6,31 @@
         "rule": {
           "interval": [
             {
-              "field": "days",
-              "daysInterval": 1,
-              "triggerAtHour": 18,
-              "triggerAtMinute": 0
+              "triggerAtHour": 18
             }
           ]
         }
       },
-      "id": "5fd72834-04c3-4b85-a560-41240887db58",
+      "id": "7e3eaf66-7973-435f-9834-da9c5112338b",
       "name": "Diario 18:00",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
       "position": [
         0,
-        300
+        0
       ]
     },
     {
       "parameters": {
         "jsCode": "// =====================================================================\n// WF3 - Definir el periodo del reporte: las últimas 24 horas.\n// $now usa la zona horaria configurada en n8n (America/Guatemala).\n// =====================================================================\nconst fin = $now;\nconst inicio = $now.minus({ hours: 24 });\n\nreturn [{\n  json: {\n    periodo_inicio: inicio.toISO(),\n    periodo_fin: fin.toISO(),\n    nombre_archivo: `reporte_tickets_${fin.toFormat('yyyyMMdd_HHmm')}.csv`,\n  },\n}];\n"
       },
-      "id": "b50fb403-15fe-41b9-bec8-09cac3d7b1ae",
+      "id": "dc523fa0-49b8-4f93-ab69-02d4f006df95",
       "name": "Definir periodo",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        220,
-        300
+        224,
+        0
       ]
     },
     {
@@ -44,27 +41,33 @@
           "queryReplacement": "={{ [ $json.periodo_inicio, $json.periodo_fin ] }}"
         }
       },
-      "id": "19f507da-d89a-4797-8865-e729650aba34",
+      "id": "a15e8993-b6e3-4dc9-9825-d7efaf39364f",
       "name": "Leer tickets del periodo",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
       "position": [
-        440,
-        300
+        448,
+        0
       ],
-      "alwaysOutputData": true
+      "alwaysOutputData": true,
+      "credentials": {
+        "postgres": {
+          "id": "L0pk0j7kjNbTJxsl",
+          "name": "Postgres Help Desk"
+        }
+      }
     },
     {
       "parameters": {
         "jsCode": "// =====================================================================\n// WF3 - Armar el contenido del CSV\n// Seguridad: protege contra \"inyección de fórmulas\" (CSV injection).\n// Si una celda empieza con = + - @, Excel la ejecutaría como fórmula;\n// se le antepone un apóstrofo para que se muestre como texto.\n// =====================================================================\nconst filas = $input.all().map(i => i.json).filter(f => f.codigo);\nconst periodo = $('Definir periodo').first().json;\n\nfunction celda(valor) {\n  let texto = String(valor ?? '');\n  if (/^[=+\\-@\\t\\r]/.test(texto)) texto = \"'\" + texto;\n  return '\"' + texto.replace(/\"/g, '\"\"') + '\"';\n}\n\nconst columnas = ['Codigo', 'Fecha', 'Departamento', 'Asunto', 'Categoria', 'Prioridad', 'Estado'];\nconst lineas = [columnas.map(celda).join(',')];\n\nfor (const f of filas) {\n  lineas.push([f.codigo, f.fecha, f.departamento, f.asunto,\n               f.categoria, f.prioridad, f.estado].map(celda).join(','));\n}\nif (filas.length === 0) {\n  lineas.push(celda('Sin tickets en el periodo'));\n}\n\n// \\uFEFF (BOM) permite que Excel muestre bien las tildes y la ñ\nreturn [{\n  json: {\n    csv: '\\uFEFF' + lineas.join('\\r\\n'),\n    total: filas.length,\n    nombre_archivo: periodo.nombre_archivo,\n  },\n}];\n"
       },
-      "id": "b068b0b6-0b38-400a-8951-a6727737932a",
+      "id": "83a511fb-e33a-4e34-be08-816464a150de",
       "name": "Armar reporte",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        660,
-        300
+        672,
+        0
       ]
     },
     {
@@ -75,29 +78,28 @@
           "fileName": "={{ $json.nombre_archivo }}"
         }
       },
-      "id": "5b0f9a81-ad7f-4692-9cfc-d058e232f63e",
+      "id": "41494988-4940-451f-9c5f-bba2b47620f6",
       "name": "Convertir a archivo CSV",
       "type": "n8n-nodes-base.convertToFile",
       "typeVersion": 1.1,
       "position": [
         880,
-        300
+        0
       ]
     },
     {
       "parameters": {
         "operation": "write",
         "fileName": "=/home/node/reportes/{{ $('Armar reporte').first().json.nombre_archivo }}",
-        "dataPropertyName": "data",
         "options": {}
       },
-      "id": "3a138c2f-ef71-40bf-9645-7fd0900beed9",
+      "id": "b6dd7d02-a24b-45a5-8eb5-fff37e01df55",
       "name": "Guardar en carpeta reportes",
       "type": "n8n-nodes-base.readWriteFile",
       "typeVersion": 1,
       "position": [
-        1100,
-        300
+        1104,
+        0
       ]
     },
     {
@@ -108,15 +110,21 @@
           "queryReplacement": "={{ [ $('Definir periodo').first().json.periodo_inicio, $('Definir periodo').first().json.periodo_fin, $('Definir periodo').first().json.nombre_archivo ] }}"
         }
       },
-      "id": "85f14c08-4d1a-4eaa-b94e-774011119360",
+      "id": "a9b7ce46-9319-4ca3-9ea3-1e38e78163db",
       "name": "Registrar reporte",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
       "position": [
-        1320,
-        300
+        1328,
+        0
       ],
-      "executeOnce": true
+      "executeOnce": true,
+      "credentials": {
+        "postgres": {
+          "id": "L0pk0j7kjNbTJxsl",
+          "name": "Postgres Help Desk"
+        }
+      }
     },
     {
       "parameters": {
@@ -126,17 +134,24 @@
           "queryReplacement": "={{ [ JSON.stringify({ reporte_id: $json.id, archivo: $json.archivo, total_tickets: $json.total_tickets }) ] }}"
         }
       },
-      "id": "b796049d-b077-4596-821e-64b8f6110b84",
+      "id": "e90068da-5354-4dc3-aa86-c0944e55977c",
       "name": "Auditoría - Reporte",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
       "position": [
-        1540,
-        300
+        1552,
+        0
       ],
-      "executeOnce": true
+      "executeOnce": true,
+      "credentials": {
+        "postgres": {
+          "id": "L0pk0j7kjNbTJxsl",
+          "name": "Postgres Help Desk"
+        }
+      }
     }
   ],
+  "pinData": {},
   "connections": {
     "Diario 18:00": {
       "main": [
@@ -216,11 +231,20 @@
       ]
     }
   },
-  "pinData": {},
+  "active": true,
   "settings": {
-    "executionOrder": "v1"
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "errorWorkflow": "mGvRNpoeolVvRpGX",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
   },
+  "versionId": "749c25df-64dc-433e-9990-cc91341fcbfe",
   "meta": {
-    "templateCredsSetupCompleted": false
-  }
+    "instanceId": "d71723bb4468d26519c1534fbe0c2f98344d5b5aa989f2fcc5f51a593924ea9a"
+  },
+  "nodeGroups": [],
+  "id": "kO6YYPh51cIqUKyn",
+  "tags": []
 }
