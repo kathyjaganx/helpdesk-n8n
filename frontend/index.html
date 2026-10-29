@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mesa de ayuda</title>
+  <link rel="icon" href="data:,">
+  <link rel="preload" href="fuentes/fraunces-latin-600-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="fuentes/figtree-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="app.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <header class="barra">
+    <div class="marca">
+      <svg class="marca-icono" viewBox="0 0 32 32" aria-hidden="true">
+        <g fill="none" stroke="currentColor" stroke-width="1.5">
+          <ellipse cx="16" cy="8.6" rx="3.6" ry="5.8"/>
+          <ellipse cx="16" cy="8.6" rx="3.6" ry="5.8" transform="rotate(72 16 16)"/>
+          <ellipse cx="16" cy="8.6" rx="3.6" ry="5.8" transform="rotate(144 16 16)"/>
+          <ellipse cx="16" cy="8.6" rx="3.6" ry="5.8" transform="rotate(216 16 16)"/>
+          <ellipse cx="16" cy="8.6" rx="3.6" ry="5.8" transform="rotate(288 16 16)"/>
+        </g>
+        <circle cx="16" cy="16" r="2.8" fill="currentColor"/>
+      </svg>
+      <div class="marca-texto">
+        <span class="marca-nombre">Mesa de ayuda</span>
+        <span class="marca-sub">Soporte técnico</span>
+      </div>
+    </div>
+    <p class="conexion" id="conexion" role="status">
+      <span class="conexion-punto" aria-hidden="true"></span>
+      <span id="conexion-texto">Conectando con el sistema…</span>
+    </p>
+  </header>
+
+  <main class="contenido">
+    <section class="boleta" aria-labelledby="titulo-formulario">
+      <div class="talon" id="talon">
+        <div class="talon-texto">
+          <p class="talon-etiqueta">Tu ticket</p>
+          <p class="talon-codigo" id="talon-codigo" aria-live="polite">TCK-––––––</p>
+          <p class="talon-nota" id="talon-nota">El código aparece aquí cuando envíes el formulario.</p>
+        </div>
+        <svg class="sello" id="sello" viewBox="0 0 100 100" aria-hidden="true">
+          <path class="sello-forma" d="M89.50 50.00 Q95.93 58.10 87.12 63.51 Q90.39 73.32 80.26 75.39 Q79.98 85.73 69.75 84.21 Q65.95 93.83 56.86 88.90 Q50.00 96.64 43.14 88.90 Q34.05 93.83 30.25 84.21 Q20.02 85.73 19.74 75.39 Q9.61 73.32 12.88 63.51 Q4.07 58.10 10.50 50.00 Q4.07 41.90 12.88 36.49 Q9.61 26.68 19.74 24.61 Q20.02 14.27 30.25 15.79 Q34.05 6.17 43.14 11.10 Q50.00 3.36 56.86 11.10 Q65.95 6.17 69.75 15.79 Q79.98 14.27 80.26 24.61 Q90.39 26.68 87.12 36.49 Q95.93 41.90 89.50 50.00 Z"/>
+          <circle class="sello-anillo" cx="50" cy="50" r="30"/>
+          <path class="sello-marca" d="M37 51 L46 60 L64 41"/>
+        </svg>
+      </div>
+
+      <div class="boleta-cuerpo">
+        <h1 id="titulo-formulario">Reportar un problema</h1>
+        <p class="boleta-ayuda">Describe qué está pasando. El sistema lo clasifica y le asigna prioridad en menos de un minuto.</p>
+
+        <form id="formulario" novalidate>
+          <div class="campo">
+            <label for="solicitante_nombre">Nombre completo</label>
+            <input id="solicitante_nombre" name="solicitante_nombre" type="text" autocomplete="name" required minlength="3" maxlength="100" aria-describedby="error-solicitante_nombre">
+            <p class="campo-error" id="error-solicitante_nombre"></p>
+          </div>
+
+          <div class="campo">
+            <label for="solicitante_correo">Correo</label>
+            <input id="solicitante_correo" name="solicitante_correo" type="email" autocomplete="email" required maxlength="150" placeholder="nombre@empresa.com" aria-describedby="error-solicitante_correo">
+            <p class="campo-error" id="error-solicitante_correo"></p>
+          </div>
+
+          <div class="campo">
+            <label for="departamento">Departamento</label>
+            <input id="departamento" name="departamento" type="text" autocomplete="organization-title" required minlength="2" maxlength="100" placeholder="Por ejemplo, Contabilidad" aria-describedby="error-departamento">
+            <p class="campo-error" id="error-departamento"></p>
+          </div>
+
+          <div class="campo">
+            <label for="asunto">Asunto</label>
+            <input id="asunto" name="asunto" type="text" required minlength="5" maxlength="150" placeholder="Por ejemplo, No tengo internet" aria-describedby="error-asunto">
+            <p class="campo-error" id="error-asunto"></p>
+          </div>
+
+          <div class="campo">
+            <div class="campo-fila">
+              <label for="descripcion">Descripción</label>
+              <span class="contador" id="contador" aria-live="off">0 / 2000</span>
+            </div>
+            <textarea id="descripcion" name="descripcion" rows="5" required minlength="10" maxlength="2000" placeholder="¿Qué pasa, desde cuándo y a quién afecta?" aria-describedby="error-descripcion"></textarea>
+            <p class="campo-error" id="error-descripcion"></p>
+          </div>
+
+          <button type="submit" class="boton-principal" id="boton-enviar">Enviar ticket</button>
+          <p class="formulario-mensaje" id="formulario-mensaje" role="alert"></p>
+        </form>
+      </div>
+    </section>
+
+    <section class="cola" aria-labelledby="titulo-cola">
+      <div class="cola-encabezado">
+        <h2 id="titulo-cola">Tickets recientes</h2>
+        <button type="button" class="boton-secundario" id="boton-actualizar">Actualizar</button>
+      </div>
+
+      <div class="resumen">
+        <p class="resumen-dato"><span class="resumen-cifra" id="resumen-total">0</span> tickets en total</p>
+        <p class="resumen-dato"><span class="resumen-cifra" id="resumen-espera">0</span> en espera de clasificación</p>
+        <div class="reparto" id="reparto" role="img" aria-label="Reparto de tickets por prioridad">
+          <span class="reparto-tramo prioridad-alta" data-prioridad="ALTA"></span>
+          <span class="reparto-tramo prioridad-media" data-prioridad="MEDIA"></span>
+          <span class="reparto-tramo prioridad-baja" data-prioridad="BAJA"></span>
+          <span class="reparto-tramo prioridad-ninguna" data-prioridad="Sin asignar"></span>
+        </div>
+        <ul class="leyenda" id="leyenda"></ul>
+      </div>
+
+      <div class="filtros">
+        <label class="filtro">
+          <span>Prioridad</span>
+          <select id="filtro-prioridad">
+            <option value="">Todas</option>
+            <option value="ALTA">Alta</option>
+            <option value="MEDIA">Media</option>
+            <option value="BAJA">Baja</option>
+          </select>
+        </label>
+        <label class="filtro">
+          <span>Estado</span>
+          <select id="filtro-estado">
+            <option value="">Todos</option>
+            <option value="NUEVO">Nuevo</option>
+            <option value="CLASIFICADO">Clasificado</option>
+          </select>
+        </label>
+        <form class="busqueda" id="busqueda" role="search">
+          <label for="buscar-codigo">Buscar por código</label>
+          <div class="busqueda-fila">
+            <input id="buscar-codigo" type="search" placeholder="TCK-000001" maxlength="10" autocomplete="off">
+            <button type="submit" class="boton-secundario">Buscar</button>
+            <button type="button" class="boton-texto" id="boton-limpiar" hidden>Ver todos</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="tabla-contenedor">
+        <table class="tabla">
+          <thead>
+            <tr>
+              <th scope="col">Código</th>
+              <th scope="col">Asunto</th>
+              <th scope="col">Departamento</th>
+              <th scope="col">Categoría</th>
+              <th scope="col">Prioridad</th>
+              <th scope="col">Estado</th>
+              <th scope="col">Creado</th>
+            </tr>
+          </thead>
+          <tbody id="tabla-cuerpo"></tbody>
+        </table>
+      </div>
+      <p class="vacio" id="vacio" hidden></p>
+      <p class="cola-pie">Selecciona un código para ver por qué se clasificó así.</p>
+    </section>
+  </main>
+
+  <footer class="pie">
+    <p>Proyecto Final de Análisis de Sistemas II, Universidad Mariano Gálvez de Guatemala.</p>
+    <p>Irma Yaritza Katiuxca Jagan Xol, carné 4090-23-9748.</p>
+  </footer>
+</body>
+</html>

@@ -1,0 +1,59 @@
+# =====================================================================
+# nginx: servidor de la página web y puerta de entrada a la API
+# Autora: Irma Yaritza Katiuxca Jagan Xol (4090-23-9748)
+#
+# La página llama a /api/... y nginx reenvía a los webhooks de n8n
+# AGREGANDO el token aquí, del lado del servidor. El token se lee de la
+# variable de entorno HELPDESK_API_TOKEN (archivo .env) al iniciar el
+# contenedor; nunca llega al navegador.
+# =====================================================================
+
+# Límite de envío de tickets: 10 por minuto por cliente (ráfaga de 5)
+limit_req_zone $binary_remote_addr zone=tickets:10m rate=10r/m;
+
+server {
+    listen 80;
+    server_name localhost;
+    server_tokens off;
+
+    root /usr/share/nginx/html;
+    index index.html;
+
+    # Cabeceras de seguridad para el navegador
+    add_header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-Frame-Options "DENY" always;
+    add_header Referrer-Policy "no-referrer" always;
+
+    # Registrar ticket -> WF1 (solo POST)
+    location = /api/tickets {
+        limit_except POST { deny all; }
+        limit_req zone=tickets burst=5 nodelay;
+        limit_req_status 429;
+        client_max_body_size 16k;
+
+        proxy_pass http://n8n:5678/webhook/tickets;
+        proxy_set_header X-API-Key "${HELPDESK_API_TOKEN}";
+        proxy_set_header X-Forwarded-For $remote_addr;
+        proxy_set_header Host $host;
+    }
+
+    # Consultar tickets -> WF5 (solo GET)
+    location = /api/consulta {
+        limit_except GET { deny all; }
+
+        proxy_pass http://n8n:5678/webhook/consulta;
+        proxy_set_header X-API-Key "${HELPDESK_API_TOKEN}";
+        proxy_set_header X-Forwarded-For $remote_addr;
+        proxy_set_header Host $host;
+    }
+
+    # Cualquier otra ruta de la API no existe
+    location /api/ {
+        return 404;
+    }
+
+    location / {
+        try_files $uri $uri/ =404;
+    }
+}

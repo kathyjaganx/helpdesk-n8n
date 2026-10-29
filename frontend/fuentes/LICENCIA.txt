@@ -1,0 +1,8 @@
+Fuentes incluidas en el proyecto (servidas localmente, sin depender de internet):
+
+- Fraunces  (Undercase Type)        — SIL Open Font License 1.1
+- Figtree   (Erik Kennedy)          — SIL Open Font License 1.1
+
+Obtenidas del paquete @fontsource (https://fontsource.org).
+La licencia SIL OFL 1.1 permite usarlas, incluirlas y distribuirlas libremente
+con el software. Texto completo: https://openfontlicense.org

@@ -5,6 +5,9 @@
 # Todas las credenciales se leen del archivo .env (que NO se sube a Git).
 # Los puertos se publican solo en 127.0.0.1: no son accesibles desde
 # otros equipos de la red.
+#
+#   http://localhost:8080  -> página web (frontend, nginx)
+#   http://localhost:5678  -> editor de n8n (backend)
 # =====================================================================
 
 services:
@@ -78,6 +81,22 @@ services:
       - ./reportes:/home/node/reportes
     ports:
       - "127.0.0.1:5678:5678"
+
+  web:
+    # Frontend: sirve la página y reenvía /api/... a los webhooks de n8n,
+    # agregando el token del lado del servidor (ver nginx/default.conf.template).
+    image: nginx:1.27-alpine
+    container_name: helpdesk-web
+    restart: unless-stopped
+    depends_on:
+      - n8n
+    environment:
+      HELPDESK_API_TOKEN: ${HELPDESK_API_TOKEN}
+    volumes:
+      - ./frontend:/usr/share/nginx/html:ro
+      - ./nginx/default.conf.template:/etc/nginx/templates/default.conf.template:ro
+    ports:
+      - "127.0.0.1:8080:80"
 
 volumes:
   pg_data:
