@@ -1,0 +1,236 @@
+{
+  "name": "WF1 - Ingesta de tickets",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "tickets",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "dbd7c22a-e61f-4e23-a562-99b2b8a77c29",
+      "name": "Webhook - Recibir ticket",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        300
+      ],
+      "webhookId": "525a589e-74e1-430e-babc-ab2f8c5eb60c"
+    },
+    {
+      "parameters": {
+        "jsCode": "// =====================================================================\n// WF1 - Validación y sanitización de la solicitud de ticket\n// Seguridad:\n//  - Lista blanca: solo se aceptan los campos definidos en REGLAS;\n//    cualquier otro campo enviado se ignora.\n//  - Se eliminan etiquetas HTML/script y caracteres de control.\n//  - Se validan longitudes mínimas y máximas y el formato del correo.\n// =====================================================================\nconst REGLAS = {\n  solicitante_nombre: { min: 3,  max: 100 },\n  solicitante_correo: { min: 6,  max: 150 },\n  departamento:       { min: 2,  max: 100 },\n  asunto:             { min: 5,  max: 150 },\n  descripcion:        { min: 10, max: 2000 },\n};\nconst CORREO = /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}$/i;\n\nfunction limpiar(valor) {\n  return valor\n    .replace(/<(script|style)[^>]*>[\\s\\S]*?<\\/\\1>/gi, '') // quita bloques <script>/<style> completos\n    .replace(/<[^>]*>/g, '')                 // quita cualquier otra etiqueta HTML\n    .replace(/[\\u0000-\\u001F\\u007F]/g, ' ')  // quita caracteres de control\n    .replace(/\\s+/g, ' ')                    // colapsa espacios repetidos\n    .trim();\n}\n\nconst entrada = $input.first().json;\nconst headers = entrada.headers || {};\nconst body = entrada.body;\nconst origen_ip = headers['x-forwarded-for'] || headers['x-real-ip'] || 'local';\n\nconst errores = [];\nconst datos = {};\nconst esObjeto = body !== null && typeof body === 'object' && !Array.isArray(body);\n\nif (!esObjeto) {\n  errores.push('El cuerpo de la solicitud debe ser un objeto JSON');\n} else {\n  for (const [campo, regla] of Object.entries(REGLAS)) {\n    const valor = body[campo];\n    if (valor === undefined || valor === null || valor === '') {\n      errores.push(`Falta el campo ${campo}`);\n      continue;\n    }\n    if (typeof valor !== 'string') {\n      errores.push(`El campo ${campo} debe ser texto`);\n      continue;\n    }\n    const limpio = limpiar(valor);\n    if (limpio.length < regla.min) {\n      errores.push(`${campo} debe tener al menos ${regla.min} caracteres`);\n    } else if (limpio.length > regla.max) {\n      errores.push(`${campo} no puede superar ${regla.max} caracteres`);\n    } else {\n      datos[campo] = limpio;\n    }\n  }\n\n  if (datos.solicitante_correo) {\n    datos.solicitante_correo = datos.solicitante_correo.toLowerCase();\n    if (!CORREO.test(datos.solicitante_correo)) {\n      errores.push('solicitante_correo no tiene un formato válido');\n      delete datos.solicitante_correo;\n    }\n  }\n}\n\nreturn [{\n  json: {\n    valido: errores.length === 0,\n    errores,\n    datos,\n    origen_ip,\n    campos_recibidos: esObjeto ? Object.keys(body).slice(0, 20) : [],\n  },\n}];\n"
+      },
+      "id": "e1beb8a5-7dc9-4185-b1ad-f2670951884f",
+      "name": "Validar y sanitizar",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "fe7d7012-08ae-4a48-b09c-914b8024a8fc",
+              "leftValue": "={{ $json.valido }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "5b25b53d-4011-49cf-b20b-3ec4dd701749",
+      "name": "¿Datos válidos?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        480,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO tickets (solicitante_nombre, solicitante_correo, departamento, asunto, descripcion)\nVALUES ($1, $2, $3, $4, $5)\nRETURNING id, codigo, estado, fecha_creacion;",
+        "options": {
+          "queryReplacement": "={{ [ $json.datos.solicitante_nombre, $json.datos.solicitante_correo, $json.datos.departamento, $json.datos.asunto, $json.datos.descripcion ] }}"
+        }
+      },
+      "id": "72d676ca-6d76-40ff-806d-4e9a15fb85d2",
+      "name": "Guardar ticket",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        720,
+        180
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO auditoria (workflow, accion, resultado, ticket_id, origen_ip, detalle)\nVALUES ('WF1_ingesta', 'crear_ticket', 'OK', $1, $2, $3::jsonb);",
+        "options": {
+          "queryReplacement": "={{ [ $json.id, $('Validar y sanitizar').first().json.origen_ip, JSON.stringify({ codigo: $json.codigo, departamento: $('Validar y sanitizar').first().json.datos.departamento }) ] }}"
+        }
+      },
+      "id": "5d02bb2d-bab4-4763-87fc-5c457b4b6d3b",
+      "name": "Auditoría - Ticket creado",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        960,
+        180
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ ok: true, mensaje: 'Ticket registrado correctamente', codigo: $('Guardar ticket').first().json.codigo, estado: $('Guardar ticket').first().json.estado }) }}",
+        "options": {
+          "responseCode": 201
+        }
+      },
+      "id": "639b46ec-68e4-4d19-9b9d-6616613f9ad3",
+      "name": "Responder 201 - Creado",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1200,
+        180
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO auditoria (workflow, accion, resultado, ticket_id, origen_ip, detalle)\nVALUES ('WF1_ingesta', 'crear_ticket', 'RECHAZADO', NULL, $1, $2::jsonb);",
+        "options": {
+          "queryReplacement": "={{ [ $json.origen_ip, JSON.stringify({ errores: $json.errores, campos_recibidos: $json.campos_recibidos }) ] }}"
+        }
+      },
+      "id": "0a377d78-61d8-4d4e-85cd-0359a04130e5",
+      "name": "Auditoría - Solicitud rechazada",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        720,
+        420
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ ok: false, mensaje: 'Solicitud rechazada', errores: $('Validar y sanitizar').first().json.errores }) }}",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "id": "cca1938f-96ce-4dcd-a419-da84519aaa7d",
+      "name": "Responder 400 - Rechazado",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        960,
+        420
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook - Recibir ticket": {
+      "main": [
+        [
+          {
+            "node": "Validar y sanitizar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validar y sanitizar": {
+      "main": [
+        [
+          {
+            "node": "¿Datos válidos?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Datos válidos?": {
+      "main": [
+        [
+          {
+            "node": "Guardar ticket",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Auditoría - Solicitud rechazada",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Guardar ticket": {
+      "main": [
+        [
+          {
+            "node": "Auditoría - Ticket creado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Auditoría - Ticket creado": {
+      "main": [
+        [
+          {
+            "node": "Responder 201 - Creado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Auditoría - Solicitud rechazada": {
+      "main": [
+        [
+          {
+            "node": "Responder 400 - Rechazado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}
