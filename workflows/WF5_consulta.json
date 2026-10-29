@@ -1,0 +1,180 @@
+{
+  "name": "WF5 - API de consulta",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "consulta",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "6590c8fe-f340-4452-ad7f-80e73ecf3457",
+      "name": "Webhook - Consultar tickets",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        300
+      ],
+      "webhookId": "3c66fef6-969a-426b-b369-b3067a94ea82"
+    },
+    {
+      "parameters": {
+        "jsCode": "// =====================================================================\n// WF5 - Validar los parámetros de la consulta\n// Parámetros opcionales en la URL:\n//   ?codigo=TCK-000001  -> un ticket específico\n//   ?limite=50          -> cuántos tickets devolver (1 a 200)\n// Seguridad: solo se aceptan estos dos parámetros, con formato estricto;\n// cualquier otro se ignora. Nunca se arma SQL con el texto recibido.\n// =====================================================================\nconst q = $input.first().json.query || {};\nconst errores = [];\n\nlet codigo = '';\nif (q.codigo !== undefined && q.codigo !== '') {\n  const c = String(q.codigo).trim().toUpperCase();\n  if (/^TCK-\\d{6}$/.test(c)) {\n    codigo = c;\n  } else {\n    errores.push('codigo debe tener el formato TCK-000000');\n  }\n}\n\nlet limite = 50;\nif (q.limite !== undefined && q.limite !== '') {\n  const n = Number(q.limite);\n  if (Number.isInteger(n) && n >= 1 && n <= 200) {\n    limite = n;\n  } else {\n    errores.push('limite debe ser un número entero entre 1 y 200');\n  }\n}\n\nreturn [{ json: { valido: errores.length === 0, errores, codigo, limite } }];\n"
+      },
+      "id": "e16d46d5-9e23-4ac0-9df0-0144804602aa",
+      "name": "Validar consulta",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "2d02c9ab-9794-405d-9ca6-a41084246be5",
+              "leftValue": "={{ $json.valido }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "d3bf1f39-774c-4c7d-bd33-b2f656adfea8",
+      "name": "¿Consulta válida?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        480,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT json_build_object(\n  'tickets', COALESCE((\n    SELECT json_agg(x ORDER BY x.id DESC) FROM (\n      SELECT t.id, t.codigo, t.solicitante_nombre, t.departamento, t.asunto,\n             c.nombre AS categoria, t.prioridad, t.estado, t.motivo_clasificacion,\n             to_char(t.fecha_creacion AT TIME ZONE 'America/Guatemala', 'YYYY-MM-DD HH24:MI') AS fecha_creacion,\n             to_char(t.fecha_clasificacion AT TIME ZONE 'America/Guatemala', 'YYYY-MM-DD HH24:MI') AS fecha_clasificacion\n      FROM tickets t\n      LEFT JOIN categorias c ON c.id = t.categoria_id\n      WHERE ($1::text = '' OR t.codigo = $1::text)\n      ORDER BY t.id DESC\n      LIMIT $2::int\n    ) x), '[]'::json),\n  'resumen', json_build_object(\n    'total', (SELECT COUNT(*) FROM tickets),\n    'por_estado', COALESCE((SELECT json_object_agg(estado, n) FROM (SELECT estado, COUNT(*) AS n FROM tickets GROUP BY estado) s), '{}'::json),\n    'por_prioridad', COALESCE((SELECT json_object_agg(p, n) FROM (SELECT COALESCE(prioridad, 'Sin asignar') AS p, COUNT(*) AS n FROM tickets GROUP BY 1) s), '{}'::json),\n    'por_categoria', COALESCE((SELECT json_object_agg(c, n) FROM (SELECT COALESCE(c.nombre, 'Sin clasificar') AS c, COUNT(*) AS n FROM tickets t LEFT JOIN categorias c ON c.id = t.categoria_id GROUP BY 1) s), '{}'::json)\n  )\n) AS respuesta;",
+        "options": {
+          "queryReplacement": "={{ [ $json.codigo, String($json.limite) ] }}"
+        }
+      },
+      "id": "911437e0-9095-4b93-a542-11b2a2a13b2c",
+      "name": "Consultar tickets",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        720,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ ok: true, ...$json.respuesta }) }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "d7678533-19b9-40ca-b98f-72672f356dc4",
+      "name": "Responder 200 - Datos",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        960,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ ok: false, mensaje: 'Consulta inválida', errores: $json.errores }) }}",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "id": "44ae40b1-b218-4660-a5f5-477822ddcba0",
+      "name": "Responder 400 - Consulta inválida",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        720,
+        420
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook - Consultar tickets": {
+      "main": [
+        [
+          {
+            "node": "Validar consulta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validar consulta": {
+      "main": [
+        [
+          {
+            "node": "¿Consulta válida?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Consulta válida?": {
+      "main": [
+        [
+          {
+            "node": "Consultar tickets",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Responder 400 - Consulta inválida",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Consultar tickets": {
+      "main": [
+        [
+          {
+            "node": "Responder 200 - Datos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}
