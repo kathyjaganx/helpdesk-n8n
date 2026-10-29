@@ -1,0 +1,11 @@
+# Credenciales: nunca al repositorio
+.env
+
+# Reportes generados (se conserva la carpeta)
+reportes/*
+!reportes/.gitkeep
+
+# Sistema operativo / editores
+.DS_Store
+Thumbs.db
+.vscode/
