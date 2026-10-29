@@ -1,0 +1,105 @@
+{
+  "name": "WF4 - Manejo de errores",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "9c84fe2c-e265-4e0d-b4de-ab06e48b18b3",
+      "name": "Error Trigger",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// =====================================================================\n// WF4 - Preparar el registro del error\n// El Error Trigger entrega datos distintos según dónde ocurrió el fallo:\n//  - \"execution\": falló un nodo durante la ejecución.\n//  - \"trigger\":   falló el disparador (por ejemplo el Schedule).\n// Seguridad: no se guarda el \"stack\" técnico completo, solo lo necesario\n// para diagnosticar; el mensaje se recorta a 2000 caracteres.\n// =====================================================================\nconst d = $input.first().json;\nconst ejecucion = d.execution || {};\nconst disparador = d.trigger || {};\nconst error = ejecucion.error || disparador.error || {};\n\nreturn [{\n  json: {\n    workflow: (d.workflow && d.workflow.name) || 'Desconocido',\n    nodo: ejecucion.lastNodeExecuted || (error.node && error.node.name) || 'No identificado',\n    mensaje: String(error.message || 'Error sin mensaje').slice(0, 2000),\n    ejecucion_id: ejecucion.id ? String(ejecucion.id) : 'Sin ejecucion',\n    url_ejecucion: ejecucion.url || 'Sin URL',\n    detalle: {\n      origen: d.trigger ? 'disparador' : 'ejecucion',\n      modo: ejecucion.mode || disparador.mode || null,\n      workflow_id: (d.workflow && d.workflow.id) || null,\n      descripcion: error.description || null,\n    },\n  },\n}];\n"
+      },
+      "id": "7c981ff4-c636-4650-bfa8-872acb7603ab",
+      "name": "Preparar registro",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO errores (workflow, nodo, mensaje, ejecucion_id, url_ejecucion, detalle)\nVALUES ($1, $2, $3, $4, $5, $6::jsonb)\nRETURNING id, workflow, nodo;",
+        "options": {
+          "queryReplacement": "={{ [ $json.workflow, $json.nodo, $json.mensaje, $json.ejecucion_id, $json.url_ejecucion, JSON.stringify($json.detalle) ] }}"
+        }
+      },
+      "id": "22674348-4b42-464c-b11c-fbb54d7ab2d5",
+      "name": "Registrar error",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        480,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO auditoria (workflow, accion, resultado, ticket_id, origen_ip, detalle)\nVALUES ('WF4_errores', 'registrar_error', 'ERROR', NULL, 'interno', $1::jsonb);",
+        "options": {
+          "queryReplacement": "={{ [ JSON.stringify({ error_id: $json.id, workflow: $json.workflow, nodo: $json.nodo }) ] }}"
+        }
+      },
+      "id": "027fa86e-bcc4-4940-a929-7962691ddc12",
+      "name": "Auditoría - Error",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        720,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Error Trigger": {
+      "main": [
+        [
+          {
+            "node": "Preparar registro",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar registro": {
+      "main": [
+        [
+          {
+            "node": "Registrar error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Registrar error": {
+      "main": [
+        [
+          {
+            "node": "Auditoría - Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}

@@ -1,0 +1,6 @@
+﻿"Fecha","Caso","Esperado","Obtenido","Resultado"
+"2026-10-29 10:29:12","1. El WF1 falla y no crea el ticket","HTTP 500","HTTP 403","FALLO"
+"2026-10-29 10:29:34","2. El WF4 registra el error en la tabla errores","1 error nuevo","0 error(es) nuevo(s)","FALLO"
+"2026-10-29 10:29:34","3. El error identifica workflow, nodo y causa","WF1 - Ingesta de tickets | Guardar ticket | permission denied"," |  | ","FALLO"
+"2026-10-29 10:29:34","4. El error queda en la auditoria","Al menos 1 registro WF4_errores","0 registro(s)","FALLO"
+"2026-10-29 10:29:34","5. El sistema se recupera al corregir la causa","HTTP 201","HTTP 403","FALLO"
