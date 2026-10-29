@@ -1,0 +1,11 @@
+﻿"Fecha","Caso","Esperado","Obtenido","Resultado","Respuesta"
+"2026-10-29 09:19:08","1. Ticket valido","201","201","PASO","{""ok"":true,""mensaje"":""Ticket registrado correctamente"",""codigo"":""TCK-000001"",""estado"":""NUEVO""}"
+"2026-10-29 09:19:08","2. Codigo HTML/script en el asunto (se limpia y se acepta)","201","201","PASO","{""ok"":true,""mensaje"":""Ticket registrado correctamente"",""codigo"":""TCK-000002"",""estado"":""NUEVO""}"
+"2026-10-29 09:19:08","3. Intento de inyeccion SQL (se guarda como texto)","201","201","PASO","{""ok"":true,""mensaje"":""Ticket registrado correctamente"",""codigo"":""TCK-000003"",""estado"":""NUEVO""}"
+"2026-10-29 09:19:08","4. Campo extra no permitido (se ignora)","201","201","PASO","{""ok"":true,""mensaje"":""Ticket registrado correctamente"",""codigo"":""TCK-000004"",""estado"":""NUEVO""}"
+"2026-10-29 09:19:08","5. Correo con formato invalido","400","400","PASO","{""ok"":false,""mensaje"":""Solicitud rechazada"",""errores"":[""solicitante_correo no tiene un formato válido""]}"
+"2026-10-29 09:19:09","6. Campos obligatorios faltantes","400","400","PASO","{""ok"":false,""mensaje"":""Solicitud rechazada"",""errores"":[""Falta el campo solicitante_correo"",""Falta el campo departamento"",""Falta el campo asunto"",""Falta el campo descripcion""]}"
+"2026-10-29 09:19:09","7. Descripcion demasiado corta","400","400","PASO","{""ok"":false,""mensaje"":""Solicitud rechazada"",""errores"":[""descripcion debe tener al menos 10 caracteres""]}"
+"2026-10-29 09:19:09","8. Cuerpo que no es un objeto JSON","400","400","PASO","{""ok"":false,""mensaje"":""Solicitud rechazada"",""errores"":[""El cuerpo de la solicitud debe ser un objeto JSON""]}"
+"2026-10-29 09:19:09","9. Sin token de acceso","403","403","PASO",
+"2026-10-29 09:19:09","10. Token incorrecto","403","403","PASO",
