@@ -3,33 +3,38 @@
   "nodes": [
     {
       "parameters": {
-        "httpMethod": "GET",
         "path": "consulta",
         "authentication": "headerAuth",
         "responseMode": "responseNode",
         "options": {}
       },
-      "id": "6590c8fe-f340-4452-ad7f-80e73ecf3457",
+      "id": "564528a4-ce79-4ff5-a331-4c7db3f0d6da",
       "name": "Webhook - Consultar tickets",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
       "position": [
         0,
-        300
+        112
       ],
-      "webhookId": "3c66fef6-969a-426b-b369-b3067a94ea82"
+      "webhookId": "3c66fef6-969a-426b-b369-b3067a94ea82",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "0o1DJJK7kfewNkon",
+          "name": "Header Auth Help Desk"
+        }
+      }
     },
     {
       "parameters": {
         "jsCode": "// =====================================================================\n// WF5 - Validar los parámetros de la consulta\n// Parámetros opcionales en la URL:\n//   ?codigo=TCK-000001  -> un ticket específico\n//   ?limite=50          -> cuántos tickets devolver (1 a 200)\n// Seguridad: solo se aceptan estos dos parámetros, con formato estricto;\n// cualquier otro se ignora. Nunca se arma SQL con el texto recibido.\n// =====================================================================\nconst q = $input.first().json.query || {};\nconst errores = [];\n\nlet codigo = '';\nif (q.codigo !== undefined && q.codigo !== '') {\n  const c = String(q.codigo).trim().toUpperCase();\n  if (/^TCK-\\d{6}$/.test(c)) {\n    codigo = c;\n  } else {\n    errores.push('codigo debe tener el formato TCK-000000');\n  }\n}\n\nlet limite = 50;\nif (q.limite !== undefined && q.limite !== '') {\n  const n = Number(q.limite);\n  if (Number.isInteger(n) && n >= 1 && n <= 200) {\n    limite = n;\n  } else {\n    errores.push('limite debe ser un número entero entre 1 y 200');\n  }\n}\n\nreturn [{ json: { valido: errores.length === 0, errores, codigo, limite } }];\n"
       },
-      "id": "e16d46d5-9e23-4ac0-9df0-0144804602aa",
+      "id": "56612cb8-8659-4086-808f-b07c88e0be40",
       "name": "Validar consulta",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
         240,
-        300
+        112
       ]
     },
     {
@@ -38,7 +43,8 @@
           "options": {
             "caseSensitive": true,
             "leftValue": "",
-            "typeValidation": "strict"
+            "typeValidation": "strict",
+            "version": 1
           },
           "conditions": [
             {
@@ -56,13 +62,13 @@
         },
         "options": {}
       },
-      "id": "d3bf1f39-774c-4c7d-bd33-b2f656adfea8",
+      "id": "aaa3f2e8-f420-402c-951e-35121b650b71",
       "name": "¿Consulta válida?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
       "position": [
         480,
-        300
+        112
       ]
     },
     {
@@ -73,14 +79,20 @@
           "queryReplacement": "={{ [ $json.codigo, String($json.limite) ] }}"
         }
       },
-      "id": "911437e0-9095-4b93-a542-11b2a2a13b2c",
+      "id": "cfa85625-46c3-44b9-afea-3625a27271dc",
       "name": "Consultar tickets",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
       "position": [
         720,
-        200
-      ]
+        0
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "L0pk0j7kjNbTJxsl",
+          "name": "Postgres Help Desk"
+        }
+      }
     },
     {
       "parameters": {
@@ -90,13 +102,13 @@
           "responseCode": 200
         }
       },
-      "id": "d7678533-19b9-40ca-b98f-72672f356dc4",
+      "id": "0d4fee12-7f4e-4321-84ba-c033ca05436d",
       "name": "Responder 200 - Datos",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
       "position": [
         960,
-        200
+        0
       ]
     },
     {
@@ -107,16 +119,17 @@
           "responseCode": 400
         }
       },
-      "id": "44ae40b1-b218-4660-a5f5-477822ddcba0",
+      "id": "78ae7a86-e806-4b49-b91f-8073fd3fdb9d",
       "name": "Responder 400 - Consulta inválida",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
       "position": [
         720,
-        420
+        224
       ]
     }
   ],
+  "pinData": {},
   "connections": {
     "Webhook - Consultar tickets": {
       "main": [
@@ -170,11 +183,20 @@
       ]
     }
   },
-  "pinData": {},
+  "active": true,
   "settings": {
-    "executionOrder": "v1"
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "errorWorkflow": "mGvRNpoeolVvRpGX",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
   },
+  "versionId": "d0143362-247c-40ba-9964-a98e717a5102",
   "meta": {
-    "templateCredsSetupCompleted": false
-  }
+    "instanceId": "d71723bb4468d26519c1534fbe0c2f98344d5b5aa989f2fcc5f51a593924ea9a"
+  },
+  "nodeGroups": [],
+  "id": "IC3QqPkWK2gvkErp",
+  "tags": []
 }
