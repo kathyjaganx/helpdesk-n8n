@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ValidadorTicket.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Cliente Java del Help Desk</a> &gt; <a href="index.source.html" class="el_package">gt.edu.umg.helpdesk.servicio</a> &gt; <span class="el_source">ValidadorTicket.java</span></div><h1>ValidadorTicket.java</h1><pre class="source lang-java linenums">package gt.edu.umg.helpdesk.servicio;
+
+import gt.edu.umg.helpdesk.modelo.SolicitudTicket;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Pattern;
+
+/**
+ * Valida una solicitud ANTES de enviarla, con las mismas reglas del WF1.
+ *
+ * El WF1 vuelve a validar todo: esta validación solo evita viajes
+ * innecesarios a la red y da mensajes inmediatos. Los mensajes usan el
+ * mismo formato que el WF1 para que el resultado sea igual en ambos lados.
+ */
+<span class="fc" id="L17">public class ValidadorTicket {</span>
+
+<span class="fc" id="L19">    private static final Pattern CORREO =</span>
+<span class="fc" id="L20">            Pattern.compile(&quot;^[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}$&quot;, Pattern.CASE_INSENSITIVE);</span>
+<span class="fc" id="L21">    private static final Pattern CODIGO = Pattern.compile(&quot;^TCK-\\d{6}$&quot;);</span>
+
+    /** campo -&gt; {mínimo, máximo} */
+<span class="fc" id="L24">    private static final Map&lt;String, int[]&gt; REGLAS = new LinkedHashMap&lt;&gt;();</span>
+
+    static {
+<span class="fc" id="L27">        REGLAS.put(&quot;solicitante_nombre&quot;, new int[] {3, 100});</span>
+<span class="fc" id="L28">        REGLAS.put(&quot;solicitante_correo&quot;, new int[] {6, 150});</span>
+<span class="fc" id="L29">        REGLAS.put(&quot;departamento&quot;, new int[] {2, 100});</span>
+<span class="fc" id="L30">        REGLAS.put(&quot;asunto&quot;, new int[] {5, 150});</span>
+<span class="fc" id="L31">        REGLAS.put(&quot;descripcion&quot;, new int[] {10, 2000});</span>
+<span class="fc" id="L32">    }</span>
+
+    public List&lt;String&gt; validar(SolicitudTicket solicitud) {
+<span class="fc" id="L35">        List&lt;String&gt; errores = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L36" title="All 2 branches covered.">        if (solicitud == null) {</span>
+<span class="fc" id="L37">            errores.add(&quot;La solicitud no puede ser nula&quot;);</span>
+<span class="fc" id="L38">            return errores;</span>
+        }
+<span class="fc" id="L40">        Map&lt;String, String&gt; valores = aMapa(solicitud);</span>
+<span class="fc bfc" id="L41" title="All 2 branches covered.">        for (Map.Entry&lt;String, int[]&gt; regla : REGLAS.entrySet()) {</span>
+<span class="fc" id="L42">            String campo = regla.getKey();</span>
+<span class="fc" id="L43">            String valor = limpiar(valores.get(campo));</span>
+<span class="fc" id="L44">            int minimo = regla.getValue()[0];</span>
+<span class="fc" id="L45">            int maximo = regla.getValue()[1];</span>
+<span class="fc bfc" id="L46" title="All 2 branches covered.">            if (valor.isEmpty()) {</span>
+<span class="fc" id="L47">                errores.add(&quot;Falta el campo &quot; + campo);</span>
+<span class="fc bfc" id="L48" title="All 2 branches covered.">            } else if (valor.length() &lt; minimo) {</span>
+<span class="fc" id="L49">                errores.add(campo + &quot; debe tener al menos &quot; + minimo + &quot; caracteres&quot;);</span>
+<span class="fc bfc" id="L50" title="All 2 branches covered.">            } else if (valor.length() &gt; maximo) {</span>
+<span class="fc" id="L51">                errores.add(campo + &quot; no puede superar &quot; + maximo + &quot; caracteres&quot;);</span>
+            }
+<span class="fc" id="L53">        }</span>
+<span class="fc" id="L54">        String correo = limpiar(solicitud.solicitanteCorreo());</span>
+<span class="fc bfc" id="L55" title="All 4 branches covered.">        if (!correo.isEmpty() &amp;&amp; !CORREO.matcher(correo).matches()) {</span>
+<span class="fc" id="L56">            errores.add(&quot;solicitante_correo no tiene un formato válido&quot;);</span>
+        }
+<span class="fc" id="L58">        return errores;</span>
+    }
+
+    /** Devuelve los datos limpios con los nombres de campo que espera el WF1. */
+    public Map&lt;String, String&gt; aMapa(SolicitudTicket solicitud) {
+<span class="fc" id="L63">        Map&lt;String, String&gt; mapa = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L64">        mapa.put(&quot;solicitante_nombre&quot;, limpiar(solicitud.solicitanteNombre()));</span>
+<span class="fc" id="L65">        mapa.put(&quot;solicitante_correo&quot;, limpiar(solicitud.solicitanteCorreo()).toLowerCase());</span>
+<span class="fc" id="L66">        mapa.put(&quot;departamento&quot;, limpiar(solicitud.departamento()));</span>
+<span class="fc" id="L67">        mapa.put(&quot;asunto&quot;, limpiar(solicitud.asunto()));</span>
+<span class="fc" id="L68">        mapa.put(&quot;descripcion&quot;, limpiar(solicitud.descripcion()));</span>
+<span class="fc" id="L69">        return mapa;</span>
+    }
+
+    /** Normaliza un código de ticket; devuelve null si no tiene el formato TCK-000000. */
+    public String normalizarCodigo(String codigo) {
+<span class="fc bfc" id="L74" title="All 2 branches covered.">        if (codigo == null) {</span>
+<span class="fc" id="L75">            return null;</span>
+        }
+<span class="fc" id="L77">        String normalizado = codigo.trim().toUpperCase();</span>
+<span class="fc bfc" id="L78" title="All 2 branches covered.">        return CODIGO.matcher(normalizado).matches() ? normalizado : null;</span>
+    }
+
+    static String limpiar(String texto) {
+<span class="fc bfc" id="L82" title="All 2 branches covered.">        return texto == null ? &quot;&quot; : texto.trim().replaceAll(&quot;\\s+&quot;, &quot; &quot;);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

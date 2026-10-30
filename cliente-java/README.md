@@ -21,7 +21,7 @@ cliente-java/
     │       ├── ClienteHelpDesk.java     # Registra, consulta y busca tickets
     │       ├── ValidadorTicket.java     # Mismas reglas que el WF1
     │       └── AnalizadorCola.java      # Pendientes, conteo y siguiente a atender
-    └── test/java/gt/edu/umg/helpdesk/   # 70 pruebas
+    └── test/java/gt/edu/umg/helpdesk/   # 71 pruebas
 ```
 
 ## Diseño para poder probar
@@ -40,7 +40,9 @@ cliente-java/
 
 Con `verify` y `verifyNoMoreInteractions` se comprueba además que, si los datos son inválidos, el cliente **no llama** al sistema.
 
-`TransporteJavaHttp` se prueba contra un servidor HTTP local del JDK (`com.sun.net.httpserver`) que comprueba el método, la ruta, el encabezado `X-API-Key` y el cuerpo en UTF-8.
+`TransporteJavaHttp` se prueba contra un servidor HTTP local del JDK (`com.sun.net.httpserver`) que comprueba el método, la ruta, el encabezado `X-API-Key`, el cuerpo en UTF-8 y que la petición use HTTP/1.1.
+
+**Por qué HTTP/1.1:** por defecto, el cliente HTTP de Java intenta pasar a HTTP/2 enviando `Upgrade: h2c`. n8n usa ese mismo mecanismo para sus WebSockets internos y deja la petición sin respuesta (se detectó al probar contra el sistema real: *request timed out*). El cliente fuerza HTTP/1.1 y una prueba de regresión impide que el problema vuelva.
 
 ## Pruebas
 
@@ -48,7 +50,7 @@ Con `verify` y `verifyNoMoreInteractions` se comprueba además que, si los datos
 |---|---|---|
 | `ValidadorTicketTest` | JUnit 5 (`@Nested`, `@ParameterizedTest`) | 20 |
 | `ClienteHelpDeskTest` | JUnit 5 + **Mockito** (`mock`, `when`, `verify`, `ArgumentCaptor`) | 27 |
-| `TransporteJavaHttpTest` | JUnit 5 + servidor HTTP local | 5 |
+| `TransporteJavaHttpTest` | JUnit 5 + servidor HTTP local | 6 |
 | `AnalizadorColaTest` | JUnit 5 | 6 |
 | `ModeloTest` | JUnit 5 (`@ParameterizedTest`) | 12 |
 
@@ -60,7 +62,7 @@ Desde la carpeta del proyecto (no requiere Java ni Maven, usa Docker):
 powershell -ExecutionPolicy Bypass -File .\pruebas\java.ps1
 ```
 
-Ejecuta `mvn verify`, que compila, corre las 70 pruebas, genera el reporte de JaCoCo y **falla si la cobertura baja del 80%** de líneas o de ramas.
+Ejecuta `mvn verify`, que compila, corre las 71 pruebas, genera el reporte de JaCoCo y **falla si la cobertura baja del 80%** de líneas o de ramas.
 
 Resultados:
 

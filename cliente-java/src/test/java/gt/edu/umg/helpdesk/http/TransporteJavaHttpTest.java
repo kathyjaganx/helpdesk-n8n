@@ -31,6 +31,7 @@ class TransporteJavaHttpTest {
     private final AtomicReference<String> token = new AtomicReference<>();
     private final AtomicReference<String> tipo = new AtomicReference<>();
     private final AtomicReference<String> cuerpo = new AtomicReference<>();
+    private final AtomicReference<String> upgrade = new AtomicReference<>();
 
     @BeforeEach
     void iniciar() throws IOException {
@@ -40,6 +41,7 @@ class TransporteJavaHttpTest {
             ruta.set(intercambio.getRequestURI().toString());
             token.set(intercambio.getRequestHeaders().getFirst("X-API-Key"));
             tipo.set(intercambio.getRequestHeaders().getFirst("Content-Type"));
+            upgrade.set(intercambio.getRequestHeaders().getFirst("Upgrade"));
             cuerpo.set(new String(intercambio.getRequestBody().readAllBytes(), StandardCharsets.UTF_8));
             byte[] respuesta = "{\"ok\":true,\"mensaje\":\"Atención\"}".getBytes(StandardCharsets.UTF_8);
             intercambio.getResponseHeaders().add("Content-Type", "application/json; charset=utf-8");
@@ -88,6 +90,18 @@ class TransporteJavaHttpTest {
 
         new TransporteJavaHttp(url, null).get("/consulta");
         assertNull(token.get());
+    }
+
+    @Test
+    @DisplayName("usa HTTP/1.1: no envía \"Upgrade: h2c\", que n8n deja sin respuesta")
+    void sinUpgradeHttp2() throws Exception {
+        TransporteJavaHttp transporte = new TransporteJavaHttp(url, "token-de-prueba");
+
+        transporte.get("/consulta");
+        assertNull(upgrade.get(), "GET no debe pedir cambio de protocolo");
+
+        transporte.post("/tickets", "{}");
+        assertNull(upgrade.get(), "POST no debe pedir cambio de protocolo");
     }
 
     @Test

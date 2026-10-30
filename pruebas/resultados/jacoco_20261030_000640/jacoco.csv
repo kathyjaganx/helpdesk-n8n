@@ -1,0 +1,18 @@
+GROUP,PACKAGE,CLASS,INSTRUCTION_MISSED,INSTRUCTION_COVERED,BRANCH_MISSED,BRANCH_COVERED,LINE_MISSED,LINE_COVERED,COMPLEXITY_MISSED,COMPLEXITY_COVERED,METHOD_MISSED,METHOD_COVERED
+Cliente Java del Help Desk,gt.edu.umg.helpdesk.modelo,TicketCreado,0,9,0,0,0,1,0,1,0,1
+Cliente Java del Help Desk,gt.edu.umg.helpdesk.modelo,SolicitudTicket,0,18,0,0,0,1,0,1,0,1
+Cliente Java del Help Desk,gt.edu.umg.helpdesk.modelo,ResultadoConsulta,0,16,0,2,0,3,0,2,0,1
+Cliente Java del Help Desk,gt.edu.umg.helpdesk.modelo,Ticket,0,42,0,0,0,3,0,3,0,3
+Cliente Java del Help Desk,gt.edu.umg.helpdesk.modelo,Prioridad,0,37,0,4,0,7,0,4,0,2
+Cliente Java del Help Desk,gt.edu.umg.helpdesk.modelo,Resumen,0,45,0,6,0,6,0,5,0,2
+Cliente Java del Help Desk,gt.edu.umg.helpdesk.servicio,ClienteHelpDesk,9,251,1,17,2,50,1,23,0,14
+Cliente Java del Help Desk,gt.edu.umg.helpdesk.servicio,AnalizadorCola,0,90,0,4,0,13,0,12,0,10
+Cliente Java del Help Desk,gt.edu.umg.helpdesk.servicio,ValidadorTicket,0,252,0,20,0,44,0,16,0,6
+Cliente Java del Help Desk,gt.edu.umg.helpdesk.http,TransporteJavaHttp,0,117,0,8,0,27,0,12,0,8
+Cliente Java del Help Desk,gt.edu.umg.helpdesk.http,RespuestaHttp,0,9,0,0,0,1,0,1,0,1
+Cliente Java del Help Desk,gt.edu.umg.helpdesk.excepciones,DatosInvalidosException,0,14,0,0,0,4,0,2,0,2
+Cliente Java del Help Desk,gt.edu.umg.helpdesk.excepciones,HelpDeskException,0,9,0,0,0,4,0,2,0,2
+Cliente Java del Help Desk,gt.edu.umg.helpdesk.excepciones,AccesoDenegadoException,0,4,0,0,0,2,0,1,0,1
+Cliente Java del Help Desk,gt.edu.umg.helpdesk.excepciones,ConexionException,0,5,0,0,0,2,0,1,0,1
+Cliente Java del Help Desk,gt.edu.umg.helpdesk.excepciones,ErrorServidorException,0,11,0,0,0,4,0,2,0,2
+Cliente Java del Help Desk,gt.edu.umg.helpdesk.excepciones,LimiteExcedidoException,0,4,0,0,0,2,0,1,0,1

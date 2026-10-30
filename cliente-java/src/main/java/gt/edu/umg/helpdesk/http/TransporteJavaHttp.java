@@ -15,6 +15,10 @@ import java.util.Objects;
  * Si se indica un token, lo envía en el encabezado X-API-Key (llamadas
  * directas a n8n). Si el token es nulo, no envía el encabezado: es el caso
  * de las llamadas a través de nginx, que lo agrega del lado del servidor.
+ *
+ * Usa HTTP/1.1 a propósito: por defecto, el cliente de Java intenta pasar a
+ * HTTP/2 enviando "Upgrade: h2c". n8n usa ese mismo mecanismo de Upgrade
+ * para sus WebSockets internos y deja la petición sin respuesta.
  */
 public class TransporteJavaHttp implements TransporteHttp {
 
@@ -25,7 +29,10 @@ public class TransporteJavaHttp implements TransporteHttp {
     private final String token;
 
     public TransporteJavaHttp(String urlBase, String token) {
-        this(HttpClient.newBuilder().connectTimeout(TIEMPO_MAXIMO).build(), urlBase, token);
+        this(HttpClient.newBuilder()
+                .version(HttpClient.Version.HTTP_1_1)
+                .connectTimeout(TIEMPO_MAXIMO)
+                .build(), urlBase, token);
     }
 
     TransporteJavaHttp(HttpClient cliente, String urlBase, String token) {

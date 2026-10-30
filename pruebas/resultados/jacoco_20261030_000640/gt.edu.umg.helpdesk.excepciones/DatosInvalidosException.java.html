@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>DatosInvalidosException.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Cliente Java del Help Desk</a> &gt; <a href="index.source.html" class="el_package">gt.edu.umg.helpdesk.excepciones</a> &gt; <span class="el_source">DatosInvalidosException.java</span></div><h1>DatosInvalidosException.java</h1><pre class="source lang-java linenums">package gt.edu.umg.helpdesk.excepciones;
+
+import java.util.List;
+
+/** Los datos no cumplen las reglas (validación local o respuesta HTTP 400 del sistema). */
+public class DatosInvalidosException extends HelpDeskException {
+    private static final long serialVersionUID = 1L;
+
+    private final transient List&lt;String&gt; errores;
+
+    public DatosInvalidosException(List&lt;String&gt; errores) {
+<span class="fc" id="L12">        super(&quot;Datos inválidos: &quot; + String.join(&quot;; &quot;, errores));</span>
+<span class="fc" id="L13">        this.errores = List.copyOf(errores);</span>
+<span class="fc" id="L14">    }</span>
+
+    public List&lt;String&gt; getErrores() {
+<span class="fc" id="L17">        return errores;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AnalizadorCola.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Cliente Java del Help Desk</a> &gt; <a href="index.source.html" class="el_package">gt.edu.umg.helpdesk.servicio</a> &gt; <span class="el_source">AnalizadorCola.java</span></div><h1>AnalizadorCola.java</h1><pre class="source lang-java linenums">package gt.edu.umg.helpdesk.servicio;
+
+import gt.edu.umg.helpdesk.modelo.Prioridad;
+import gt.edu.umg.helpdesk.modelo.Ticket;
+import java.util.Comparator;
+import java.util.EnumMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
+/**
+ * Reglas para atender la cola de tickets: qué está pendiente y qué
+ * atender primero. Trabaja sobre la lista que devuelve el WF5.
+ */
+<span class="fc" id="L15">public class AnalizadorCola {</span>
+
+    /** Tickets que el WF2 todavía no clasifica. */
+    public List&lt;Ticket&gt; enEspera(List&lt;Ticket&gt; tickets) {
+<span class="fc" id="L19">        return tickets.stream().filter(t -&gt; &quot;NUEVO&quot;.equals(t.estado())).toList();</span>
+    }
+
+    /** Cantidad de tickets por prioridad. Siempre incluye las tres prioridades. */
+    public Map&lt;Prioridad, Long&gt; contarPorPrioridad(List&lt;Ticket&gt; tickets) {
+<span class="fc" id="L24">        Map&lt;Prioridad, Long&gt; conteo = new EnumMap&lt;&gt;(Prioridad.class);</span>
+<span class="fc bfc" id="L25" title="All 2 branches covered.">        for (Prioridad p : Prioridad.values()) {</span>
+<span class="fc" id="L26">            conteo.put(p, 0L);</span>
+        }
+<span class="fc" id="L28">        tickets.forEach(t -&gt; t.prioridadAsignada().ifPresent(p -&gt; conteo.merge(p, 1L, Long::sum)));</span>
+<span class="fc" id="L29">        return conteo;</span>
+    }
+
+    /**
+     * Siguiente ticket a atender: el clasificado de mayor prioridad y, entre
+     * los de igual prioridad, el más antiguo.
+     */
+    public Optional&lt;Ticket&gt; siguienteAAtender(List&lt;Ticket&gt; tickets) {
+<span class="fc" id="L37">        return tickets.stream()</span>
+<span class="fc" id="L38">                .filter(Ticket::estaClasificado)</span>
+<span class="fc" id="L39">                .filter(t -&gt; t.prioridadAsignada().isPresent())</span>
+<span class="fc" id="L40">                .min(Comparator</span>
+<span class="fc" id="L41">                        .comparing((Ticket t) -&gt; t.prioridadAsignada().get())</span>
+<span class="fc bfc" id="L42" title="All 2 branches covered.">                        .thenComparing(t -&gt; t.fechaCreacion() == null ? &quot;&quot; : t.fechaCreacion()));</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>
