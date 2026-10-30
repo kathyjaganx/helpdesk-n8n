@@ -5,7 +5,11 @@
 reportes/*
 !reportes/.gitkeep
 
+# Compilación del cliente Java (se regenera con pruebas\java.ps1)
+cliente-java/target/
+
 # Sistema operativo / editores
 .DS_Store
 Thumbs.db
 .vscode/
+.idea/

@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>TransporteJavaHttp.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Cliente Java del Help Desk</a> &gt; <a href="index.source.html" class="el_package">gt.edu.umg.helpdesk.http</a> &gt; <span class="el_source">TransporteJavaHttp.java</span></div><h1>TransporteJavaHttp.java</h1><pre class="source lang-java linenums">package gt.edu.umg.helpdesk.http;
+
+import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
+import java.time.Duration;
+import java.util.Objects;
+
+/**
+ * Implementación real de {@link TransporteHttp} con el cliente HTTP de Java.
+ *
+ * Si se indica un token, lo envía en el encabezado X-API-Key (llamadas
+ * directas a n8n). Si el token es nulo, no envía el encabezado: es el caso
+ * de las llamadas a través de nginx, que lo agrega del lado del servidor.
+ */
+public class TransporteJavaHttp implements TransporteHttp {
+
+<span class="fc" id="L21">    private static final Duration TIEMPO_MAXIMO = Duration.ofSeconds(15);</span>
+
+    private final HttpClient cliente;
+    private final String urlBase;
+    private final String token;
+
+    public TransporteJavaHttp(String urlBase, String token) {
+<span class="fc" id="L28">        this(HttpClient.newBuilder().connectTimeout(TIEMPO_MAXIMO).build(), urlBase, token);</span>
+<span class="fc" id="L29">    }</span>
+
+<span class="fc" id="L31">    TransporteJavaHttp(HttpClient cliente, String urlBase, String token) {</span>
+<span class="fc" id="L32">        this.cliente = Objects.requireNonNull(cliente);</span>
+<span class="fc" id="L33">        this.urlBase = quitarBarraFinal(Objects.requireNonNull(urlBase, &quot;urlBase&quot;));</span>
+<span class="fc bfc" id="L34" title="All 4 branches covered.">        this.token = (token == null || token.isBlank()) ? null : token;</span>
+<span class="fc" id="L35">    }</span>
+
+    @Override
+    public RespuestaHttp post(String ruta, String cuerpoJson) throws IOException, InterruptedException {
+<span class="fc" id="L39">        HttpRequest peticion = base(ruta)</span>
+<span class="fc" id="L40">                .header(&quot;Content-Type&quot;, &quot;application/json; charset=utf-8&quot;)</span>
+<span class="fc" id="L41">                .POST(HttpRequest.BodyPublishers.ofString(cuerpoJson, StandardCharsets.UTF_8))</span>
+<span class="fc" id="L42">                .build();</span>
+<span class="fc" id="L43">        return enviar(peticion);</span>
+    }
+
+    @Override
+    public RespuestaHttp get(String rutaConParametros) throws IOException, InterruptedException {
+<span class="fc" id="L48">        return enviar(base(rutaConParametros).GET().build());</span>
+    }
+
+    private HttpRequest.Builder base(String ruta) {
+<span class="fc" id="L52">        HttpRequest.Builder constructor = HttpRequest.newBuilder(URI.create(urlBase + ruta))</span>
+<span class="fc" id="L53">                .timeout(TIEMPO_MAXIMO)</span>
+<span class="fc" id="L54">                .header(&quot;Accept&quot;, &quot;application/json&quot;);</span>
+<span class="fc bfc" id="L55" title="All 2 branches covered.">        if (token != null) {</span>
+<span class="fc" id="L56">            constructor.header(&quot;X-API-Key&quot;, token);</span>
+        }
+<span class="fc" id="L58">        return constructor;</span>
+    }
+
+    private RespuestaHttp enviar(HttpRequest peticion) throws IOException, InterruptedException {
+<span class="fc" id="L62">        HttpResponse&lt;String&gt; respuesta =</span>
+<span class="fc" id="L63">                cliente.send(peticion, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));</span>
+<span class="fc" id="L64">        return new RespuestaHttp(respuesta.statusCode(), respuesta.body());</span>
+    }
+
+    private static String quitarBarraFinal(String url) {
+<span class="fc bfc" id="L68" title="All 2 branches covered.">        return url.endsWith(&quot;/&quot;) ? url.substring(0, url.length() - 1) : url;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

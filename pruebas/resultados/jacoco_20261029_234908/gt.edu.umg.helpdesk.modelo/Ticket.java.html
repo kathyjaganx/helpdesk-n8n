@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Ticket.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Cliente Java del Help Desk</a> &gt; <a href="index.source.html" class="el_package">gt.edu.umg.helpdesk.modelo</a> &gt; <span class="el_source">Ticket.java</span></div><h1>Ticket.java</h1><pre class="source lang-java linenums">package gt.edu.umg.helpdesk.modelo;
+
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.Optional;
+
+/** Un ticket tal como lo devuelve el WF5 (la API no incluye el correo del solicitante). */
+@JsonIgnoreProperties(ignoreUnknown = true)
+<span class="fc" id="L9">public record Ticket(</span>
+        @JsonProperty(&quot;codigo&quot;) String codigo,
+        @JsonProperty(&quot;solicitante_nombre&quot;) String solicitanteNombre,
+        @JsonProperty(&quot;departamento&quot;) String departamento,
+        @JsonProperty(&quot;asunto&quot;) String asunto,
+        @JsonProperty(&quot;categoria&quot;) String categoria,
+        @JsonProperty(&quot;prioridad&quot;) String prioridad,
+        @JsonProperty(&quot;estado&quot;) String estado,
+        @JsonProperty(&quot;motivo_clasificacion&quot;) String motivoClasificacion,
+        @JsonProperty(&quot;fecha_creacion&quot;) String fechaCreacion,
+        @JsonProperty(&quot;fecha_clasificacion&quot;) String fechaClasificacion) {
+
+    public Optional&lt;Prioridad&gt; prioridadAsignada() {
+<span class="fc" id="L22">        return Prioridad.desde(prioridad);</span>
+    }
+
+    public boolean estaClasificado() {
+<span class="fc" id="L26">        return &quot;CLASIFICADO&quot;.equals(estado);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>
